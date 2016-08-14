@@ -56,17 +56,20 @@ class Adafruit_FeatherOLED_Photography : public Adafruit_FeatherOLED
 {
     protected:
 
+        //
+        // Text size for all the text related to icons and defining the icons size as well
+        //
+
+        uint8_t  _iconsSize;
+
+
+
+        //
+        // Icon styles
+        //
+
         uint8_t  _batteryIcon;
         uint8_t  _batteryText;
-
-
-
-        //
-        // Screen dot matrix size
-        //
-
-        uint8_t  _displayWidth;
-        uint8_t  _displayHeight;
 
 
 
@@ -89,9 +92,13 @@ class Adafruit_FeatherOLED_Photography : public Adafruit_FeatherOLED
 
 
 
-        void     renderBattery ( void );
+        uint16_t getTextBoxWidth     ( String str );
 
-        uint16_t getTextBoxWidth( String str );
+        float    getBatteryPercentage( void );
+
+        String   getBatteryText      ( void );
+
+        void     renderBattery       ( void );
 
 
 
@@ -130,6 +137,14 @@ class Adafruit_FeatherOLED_Photography : public Adafruit_FeatherOLED
         {
 
             //
+            // Show small icons by default
+            //
+
+            _iconsSize            = 1;
+
+
+
+            //
             // Show battery bars by default
             //
 
@@ -150,9 +165,6 @@ class Adafruit_FeatherOLED_Photography : public Adafruit_FeatherOLED
             // or to draw bigger/smaller icons
             //
 
-            _displayWidth         = 128;
-            _displayHeight        =  32;
-
             _icnBatteryWidth      =  19;
             _icnBatteryHeight     =   7;
             _icnBatteryBarWidth   = ( ( _icnBatteryWidth - 3 ) / 4 );
@@ -162,16 +174,43 @@ class Adafruit_FeatherOLED_Photography : public Adafruit_FeatherOLED
 
         }
 
-        bool    getBatteryVisible ( void );
-        bool    isBatteryVisible  ( void );
-        uint8_t getBatteryIcon    ( void );
-        uint8_t getBatteryText    ( void );
 
-        void    setBatteryVisible ( bool    enable );
-        void    setBatteryIcon    ( uint8_t enable );
-        void    setBatteryText    ( uint8_t textType );
 
-        void    refreshIcons      ( void );
+        //
+        // Getter methods
+        //
+
+        uint16_t getDisplayWidth    ( void );
+        uint16_t getDisplayHeight   ( void );
+
+        uint8_t  getTextSize        ( void );
+        uint8_t  getIconsSize       ( void );
+
+        bool     getBatteryVisible  ( void );
+        bool     isBatteryVisible   ( void );
+        uint8_t  getBatteryIconStyle( void );
+        uint8_t  getBatteryTextStyle( void );
+
+
+
+        //
+        // Setter methods
+        //
+
+        void     setIconsSize       ( uint8_t );
+
+        void     setBatteryVisible  ( bool    enable );
+        void     setBatteryIconStyle( uint8_t enable );
+        void     setBatteryTextStyle( uint8_t textType );
+
+
+
+        //
+        // Graphic related methods
+        //
+
+        void     refreshIcons       ( void );
+        void     clearMsgArea       ( void );
 
 };
 

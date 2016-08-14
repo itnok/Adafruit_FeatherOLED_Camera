@@ -57,26 +57,169 @@
 
 /******************************************************************************/
 /*!
+    @brief  Get width of the bounding box of a text with the current typographic settings
+*/
+/******************************************************************************/
+
+uint16_t Adafruit_FeatherOLED_Photography::getTextBoxWidth( String str )
+{
+
+    int16_t  i_txtBoxX  = 0;
+    int16_t  i_txtBoxY  = 0;
+    uint16_t ui_txtBoxW = 0;
+    uint16_t ui_txtBoxH = 0;
+
+    int      i_strLen   = str.length() + 1;
+
+    char     charArray[ i_strLen ];
+
+
+
+    //
+    // Copy str over to charArray
+    //
+
+    str.toCharArray( charArray, i_strLen );
+
+
+
+    //
+    // Evaluate width differently according to
+    // the text nature ( fixed width or font )
+    //
+
+    if ( ! gfxFont )
+    {
+
+        return ( i_strLen - 1 ) * 6 * textsize + 1;
+
+    }
+    else
+    {
+
+        getTextBounds( charArray, 0, 0, &i_txtBoxX, &i_txtBoxY, &ui_txtBoxW, &ui_txtBoxH );
+
+        return ui_txtBoxW;
+
+    }
+
+}
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Get the percentage of juice in the battery
+*/
+/******************************************************************************/
+
+float Adafruit_FeatherOLED_Photography::getBatteryPercentage( void )
+{
+
+    float    f_batteryPercentage = 0.0F;
+
+
+
+    //
+    // Calculate battery juice percentage
+    //
+
+    f_batteryPercentage = ( _battery - 3.39F ) * 100 / ( 4.26F - 3.39F );
+
+
+
+    //
+    // Make sure percentage is in the correct range
+    //
+
+    if ( f_batteryPercentage < 0.0F )
+    {
+
+        f_batteryPercentage = 0.0F;
+
+    }
+    else if ( f_batteryPercentage > 100.0F )
+    {
+
+        f_batteryPercentage = 100.0F;
+
+    }
+
+
+
+    return f_batteryPercentage;
+
+}
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Get width of the bounding box of a text with the current typographic settings
+*/
+/******************************************************************************/
+
+String Adafruit_FeatherOLED_Photography::getBatteryText( void )
+{
+
+    float    f_batteryPercentage = getBatteryPercentage();
+
+    String   s_batteryText       = "";
+
+
+
+    if ( _batteryText == FOLED_BATTERYTEXT_VOLT )
+    {
+
+        //
+        // Create the string containing percentage of battery charge
+        //
+
+        s_batteryText += String( _battery, 2 );
+        s_batteryText += "V";
+        s_batteryText.trim();
+
+    }
+    else if ( _batteryText == FOLED_BATTERYTEXT_PERC )
+    {
+
+        //
+        // Create the string containing percentage of battery charge
+        //
+
+        s_batteryText += String( f_batteryPercentage, 0 );
+        s_batteryText += "%";
+        s_batteryText.trim();
+
+    }
+
+    return s_batteryText;
+
+}
+
+
+
+/******************************************************************************/
+/*!
     @brief  Renders the battery icon
 */
 /******************************************************************************/
 void Adafruit_FeatherOLED_Photography::renderBattery ( void )
 {
 
-    uint8_t  i                    = 0;
+    uint8_t  ui_icnBatteryStartX     = 0;
+    uint8_t  ui_icnBatteryStartY     = 0;
 
-    uint8_t  icnBatteryStartX     = 0;
-    uint8_t  icnBatteryStartY     = 0;
+    uint8_t  ui_icnBatteryHalfWidth  = (int)( ( _icnBatteryWidth  - 2 ) * 0.5 + 0.5 );  // it's like round( ( _icnBatteryWidth  - 2 ) / 2 );
+    uint8_t  ui_icnBatteryHalfHeight = (int)( ( _icnBatteryHeight - 2 ) * 0.5 + 0.5 );  // it's like round( ( _icnBatteryHeight - 2 ) / 2 );
 
-    uint8_t  icnBatteryHalfWidth  = (int)( ( _icnBatteryWidth  - 2 ) * 0.5 + 0.5 );  // it's like round( ( _icnBatteryWidth  - 2 ) / 2 );
-    uint8_t  icnBatteryHalfHeight = (int)( ( _icnBatteryHeight - 2 ) * 0.5 + 0.5 );  // it's like round( ( _icnBatteryHeight - 2 ) / 2 );
+    uint8_t  ui_icnSize              = getIconsSize();
+    uint8_t  ui_txtBatteryStartX     = 0;
+    uint8_t  ui_txtBatteryStartY     = 0;
 
-    uint8_t  txtBatteryStartX     = 0;
-    uint8_t  txtBatteryStartY     = 0;
+    uint8_t  ui_originalTxtSize      = getTextSize();
 
-    float    batteryPercentage    = 0.0F;
-
-    String   batText              = "";
+    String   s_batText               = "";
 
 
 
@@ -87,11 +230,13 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
         // Render the battery icon if requested
         //
 
+        setTextSize( getIconsSize() );
+
         switch ( _batteryIcon )
         {
             case FOLED_BATTERYICON_BARS:
 
-                icnBatteryStartX = _displayWidth - _icnBatteryWidth;
+                ui_icnBatteryStartX = _width - ( _icnBatteryWidth * ui_icnSize );
 
 
 
@@ -99,40 +244,40 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                 // Draw the base ( empty ) battery icon
                 //
 
-                drawLine( icnBatteryStartX + 1,
-                          icnBatteryStartY,
-                          icnBatteryStartX + _icnBatteryWidth  - 4,
-                          icnBatteryStartY,
+                drawLine( ui_icnBatteryStartX + 1,
+                          ui_icnBatteryStartY,
+                          ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 4,
+                          ui_icnBatteryStartY,
                           WHITE );
 
-                drawLine( icnBatteryStartX,
-                          icnBatteryStartY + 1,
-                          icnBatteryStartX,
-                          icnBatteryStartY + _icnBatteryHeight - 2,
+                drawLine( ui_icnBatteryStartX,
+                          ui_icnBatteryStartY + 1,
+                          ui_icnBatteryStartX,
+                          ui_icnBatteryStartY + ( _icnBatteryHeight * ui_icnSize ) - 2,
                           WHITE );
 
-                drawLine( icnBatteryStartX + 1,
-                          icnBatteryStartY + _icnBatteryHeight - 1,
-                          icnBatteryStartX + _icnBatteryWidth  - 4,
-                          icnBatteryStartY + _icnBatteryHeight - 1,
+                drawLine( ui_icnBatteryStartX + 1,
+                          ui_icnBatteryStartY + ( _icnBatteryHeight * ui_icnSize ) - 1,
+                          ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 4,
+                          ui_icnBatteryStartY + ( _icnBatteryHeight * ui_icnSize ) - 1,
                           WHITE );
 
-                drawLine( icnBatteryStartX + _icnBatteryWidth  - 3,
-                          icnBatteryStartY + 1,
-                          icnBatteryStartX + _icnBatteryWidth  - 2,
-                          icnBatteryStartY + 1,
+                drawLine( ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 3,
+                          ui_icnBatteryStartY + 1,
+                          ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 2,
+                          ui_icnBatteryStartY + 1,
                           WHITE );
 
-                drawLine( icnBatteryStartX + _icnBatteryWidth  - 1,
-                          icnBatteryStartY + 2,
-                          icnBatteryStartX + _icnBatteryWidth  - 1,
-                          icnBatteryStartY + _icnBatteryHeight - 3,
+                drawLine( ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 1,
+                          ui_icnBatteryStartY + 2,
+                          ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 1,
+                          ui_icnBatteryStartY + ( _icnBatteryHeight * ui_icnSize ) - 3,
                           WHITE );
 
-                drawLine( icnBatteryStartX + _icnBatteryWidth  - 3,
-                          icnBatteryStartY + _icnBatteryHeight - 2,
-                          icnBatteryStartX + _icnBatteryWidth  - 2,
-                          icnBatteryStartY + _icnBatteryHeight - 2,
+                drawLine( ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 3,
+                          ui_icnBatteryStartY + ( _icnBatteryHeight * ui_icnSize ) - 2,
+                          ui_icnBatteryStartX + ( _icnBatteryWidth  * ui_icnSize ) - 2,
+                          ui_icnBatteryStartY + ( _icnBatteryHeight * ui_icnSize ) - 2,
                           WHITE );
 
 
@@ -148,10 +293,10 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                     // One bar
                     //
 
-                    fillRect( icnBatteryStartX    + 2,
-                              icnBatteryStartY    + 2,
-                              _icnBatteryBarWidth - 1,
-                              _icnBatteryHeight   - 4,
+                    fillRect( ui_icnBatteryStartX   + 2,
+                              ui_icnBatteryStartY   + 2,
+                              ( _icnBatteryBarWidth * ui_icnSize ) - 1,
+                              ( _icnBatteryHeight   * ui_icnSize ) - 4,
                               WHITE );
 
                     if ( _battery >= 3.6F )
@@ -161,10 +306,10 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                         // 2nd bar
                         //
 
-                        fillRect( icnBatteryStartX    + _icnBatteryBarWidth + 2,
-                                  icnBatteryStartY    + 2,
-                                  _icnBatteryBarWidth - 1,
-                                  _icnBatteryHeight   - 4,
+                        fillRect( ui_icnBatteryStartX   + ( _icnBatteryBarWidth * ui_icnSize ) + 2,
+                                  ui_icnBatteryStartY   + 2,
+                                  ( _icnBatteryBarWidth * ui_icnSize ) - 1,
+                                  ( _icnBatteryHeight   * ui_icnSize ) - 4,
                                   WHITE );
 
                     }
@@ -176,10 +321,10 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                         // 3rd bar
                         //
 
-                        fillRect( icnBatteryStartX    + _icnBatteryBarWidth * 2 + 2,
-                                  icnBatteryStartY    + 2,
-                                  _icnBatteryBarWidth - 1,
-                                  _icnBatteryHeight   - 4,
+                        fillRect( ui_icnBatteryStartX   + ( _icnBatteryBarWidth * ui_icnSize * 2 ) + 2,
+                                  ui_icnBatteryStartY   + 2,
+                                  ( _icnBatteryBarWidth * ui_icnSize ) - 1,
+                                  ( _icnBatteryHeight   * ui_icnSize ) - 4,
                                   WHITE );
 
                     }
@@ -191,10 +336,10 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                         // 4th bar
                         //
 
-                        fillRect( icnBatteryStartX    + _icnBatteryBarWidth * 3 + 2,
-                                  icnBatteryStartY    + 2,
-                                  _icnBatteryBarWidth - 1,
-                                  _icnBatteryHeight   - 4,
+                        fillRect( ui_icnBatteryStartX   + ( _icnBatteryBarWidth * ui_icnSize * 3 ) + 2,
+                                  ui_icnBatteryStartY   + 2,
+                                  ( _icnBatteryBarWidth * ui_icnSize ) - 1,
+                                  ( _icnBatteryHeight   * ui_icnSize ) - 4,
                                   WHITE );
 
                     }
@@ -206,33 +351,31 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                         // Fully Charged
                         //
 
-                        fillRect( icnBatteryStartX  + 1,
-                                  icnBatteryStartY  + 1,
-                                  _icnBatteryWidth  - 2,
-                                  _icnBatteryHeight - 2,
+                        fillRect( ui_icnBatteryStartX + 1,
+                                  ui_icnBatteryStartY + 1,
+                                  ( _icnBatteryWidth  * ui_icnSize ) - 2,
+                                  ( _icnBatteryHeight * ui_icnSize ) - 2,
                                   WHITE );
 
                         //
                         // Bolt Symbol
                         //
 
-                        drawLine( icnBatteryStartX + icnBatteryHalfWidth - 1,
-                                  icnBatteryStartY + _icnBatteryHeight   - 2,
-                                  icnBatteryStartX + icnBatteryHalfWidth + icnBatteryHalfHeight - 1,
-                                  icnBatteryStartY + _icnBatteryHeight   - icnBatteryHalfHeight - 1,
-                                  BLACK );
+                        fillTriangle( ui_icnBatteryStartX + ( ui_icnBatteryHalfWidth * ui_icnSize ) - 1,
+                                      ui_icnBatteryStartY + ( _icnBatteryHeight      * ui_icnSize ) - ui_icnSize - 1,
+                                      ui_icnBatteryStartX + ( ui_icnBatteryHalfWidth + ui_icnBatteryHalfHeight ) * ui_icnSize - 1,
+                                      ui_icnBatteryStartY + ( _icnBatteryHeight      - ui_icnBatteryHalfHeight ) * ui_icnSize - ui_icnSize - 1,
+                                      ui_icnBatteryStartX + ( ui_icnBatteryHalfWidth * ui_icnSize ) - 1,
+                                      ui_icnBatteryStartY + ( _icnBatteryHeight      - ui_icnBatteryHalfHeight ) * ui_icnSize - 1,
+                                      BLACK);
 
-                        drawLine( icnBatteryStartX + icnBatteryHalfWidth + icnBatteryHalfHeight - 1,
-                                  icnBatteryStartY + _icnBatteryHeight   - icnBatteryHalfHeight - 1,
-                                  icnBatteryStartX + icnBatteryHalfWidth - icnBatteryHalfHeight,
-                                  icnBatteryStartY + _icnBatteryHeight   - icnBatteryHalfHeight - 1,
-                                  BLACK );
-
-                        drawLine( icnBatteryStartX + icnBatteryHalfWidth - icnBatteryHalfHeight,
-                                  icnBatteryStartY + _icnBatteryHeight   - icnBatteryHalfHeight - 1,
-                                  icnBatteryStartX + icnBatteryHalfWidth,
-                                  icnBatteryStartY + 1,
-                                  BLACK );
+                        fillTriangle( ui_icnBatteryStartX + ( ui_icnBatteryHalfWidth - ui_icnBatteryHalfHeight ) * ui_icnSize,
+                                      ui_icnBatteryStartY + ( _icnBatteryHeight      - ui_icnBatteryHalfHeight ) * ui_icnSize + ui_icnSize - 1,
+                                      ui_icnBatteryStartX + ( ui_icnBatteryHalfWidth * ui_icnSize ),
+                                      ui_icnBatteryStartY + ui_icnSize,
+                                      ui_icnBatteryStartX + ( ui_icnBatteryHalfWidth * ui_icnSize ) - 1,
+                                      ui_icnBatteryStartY + ( _icnBatteryHeight      - ui_icnBatteryHalfHeight ) * ui_icnSize - 1,
+                                      BLACK);
 
                     }
                 }
@@ -241,7 +384,7 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
 
             case FOLED_BATTERYICON_MINI:
 
-                icnBatteryStartX = _displayWidth - _icnBatteryMiniWidth;
+                ui_icnBatteryStartX = _width - ( _icnBatteryMiniWidth * ui_icnSize );
 
 
 
@@ -249,29 +392,47 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
                 // Draw the mini ( vertical ) battery icon
                 //
 
-                drawLine( icnBatteryStartX,
-                          icnBatteryStartY + 1,
-                          icnBatteryStartX,
-                          icnBatteryStartY + _icnBatteryMiniHeight - 1,
+                drawLine( ui_icnBatteryStartX,
+                          ui_icnBatteryStartY + ui_icnSize,
+                          ui_icnBatteryStartX,
+                          ui_icnBatteryStartY + ( _icnBatteryMiniHeight * ui_icnSize ) - 1,
                           WHITE );
 
-                drawLine( icnBatteryStartX,
-                          icnBatteryStartY + _icnBatteryMiniHeight - 1,
-                          icnBatteryStartX + _icnBatteryMiniWidth  - 1,
-                          icnBatteryStartY + _icnBatteryMiniHeight - 1,
+                drawLine( ui_icnBatteryStartX,
+                          ui_icnBatteryStartY + ( _icnBatteryMiniHeight * ui_icnSize ) - 1,
+                          ui_icnBatteryStartX + ( _icnBatteryMiniWidth  * ui_icnSize ) - 1,
+                          ui_icnBatteryStartY + ( _icnBatteryMiniHeight * ui_icnSize ) - 1,
                           WHITE );
 
-                drawLine( icnBatteryStartX + _icnBatteryMiniWidth  - 1,
-                          icnBatteryStartY + _icnBatteryMiniHeight - 1,
-                          icnBatteryStartX + _icnBatteryMiniWidth  - 1,
-                          icnBatteryStartY + 1,
+                drawLine( ui_icnBatteryStartX + ( _icnBatteryMiniWidth  * ui_icnSize ) - 1,
+                          ui_icnBatteryStartY + ( _icnBatteryMiniHeight * ui_icnSize ) - 1,
+                          ui_icnBatteryStartX + ( _icnBatteryMiniWidth  * ui_icnSize ) - 1,
+                          ui_icnBatteryStartY + ui_icnSize,
                           WHITE );
 
-                fillRect( icnBatteryStartX + 1,
-                          icnBatteryStartY,
-                          _icnBatteryMiniWidth - 2,
-                          2,
+                fillRect( ui_icnBatteryStartX    + 1,
+                          ui_icnBatteryStartY,
+                          ( _icnBatteryMiniWidth * ui_icnSize ) - 2,
+                          ui_icnSize             + 1,
                           WHITE );
+
+
+
+                //
+                // Draw the juice level in the mini vertical battery icon
+                //
+
+                if( ui_icnBatteryStartX + 2 < ui_icnBatteryStartX + ( _icnBatteryMiniWidth  * ui_icnSize ) - 3 )
+                {
+
+                    fillRect( ui_icnBatteryStartX + 2,
+                              ui_icnBatteryStartY + ( _icnBatteryMiniHeight * ui_icnSize ) - 2 -
+                              ( int )( ( _icnBatteryMiniHeight * ui_icnSize - 4 - ui_icnSize ) * getBatteryPercentage() * 0.01 + 0.5 ),
+                              ( _icnBatteryMiniWidth * ui_icnSize ) - 4,
+                              ( int )( ( _icnBatteryMiniHeight * ui_icnSize - 4 - ui_icnSize ) * getBatteryPercentage() * 0.01 + 0.5 ),
+                              WHITE );
+
+                }
 
                 break;
 
@@ -282,60 +443,7 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
 
 
 
-        //
-        // Calculate battery juice percentage
-        //
-
-        batteryPercentage = ( _battery - 3.39F ) * 100 / ( 4.26F - 3.39F );
-
-
-
-        //
-        // Make sure percentage is in the correct range
-        //
-
-        if ( batteryPercentage < 0.0F )
-        {
-
-            batteryPercentage = 0.0F;
-
-        }
-        else if ( batteryPercentage > 100.0F )
-        {
-
-            batteryPercentage = 100.0F;
-
-        }
-
-
-
-        if ( _batteryText == FOLED_BATTERYTEXT_VOLT )
-        {
-
-            //
-            // Create the string containing percentage of battery charge
-            //
-
-            batText += String( _battery, 2 );
-            batText += "V";
-
-            batText.trim();
-
-        }
-        else if ( _batteryText == FOLED_BATTERYTEXT_PERC )
-        {
-
-            //
-            // Create the string containing percentage of battery charge
-            //
-
-            batText += String( batteryPercentage, 0 );
-            batText += "%";
-
-            batText.trim();
-
-        }
-
+        s_batText = getBatteryText();
 
 
         //
@@ -345,19 +453,19 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
         if ( _batteryIcon == FOLED_BATTERYICON_NONE )
         {
 
-            txtBatteryStartX = _displayWidth - getTextBoxWidth( batText ) - 1;
+            ui_txtBatteryStartX = _width - getTextBoxWidth( s_batText ) - 1;
 
         }
         else if ( _batteryIcon == FOLED_BATTERYICON_BARS )
         {
 
-            txtBatteryStartX = _displayWidth - _icnBatteryWidth - getTextBoxWidth( batText ) - 1;
+            ui_txtBatteryStartX = ui_icnBatteryStartX - getTextBoxWidth( s_batText ) - 1;
 
         }
         else if ( _batteryIcon == FOLED_BATTERYICON_MINI )
         {
 
-            txtBatteryStartX = _displayWidth - _icnBatteryMiniWidth - getTextBoxWidth( batText ) - 1;
+            ui_txtBatteryStartX = ui_icnBatteryStartX - getTextBoxWidth( s_batText ) - 1;
 
         }
 
@@ -367,63 +475,13 @@ void Adafruit_FeatherOLED_Photography::renderBattery ( void )
         // Print text on the OLED display
         //
 
-        setCursor( txtBatteryStartX, txtBatteryStartY );
+        setCursor( ui_txtBatteryStartX, ui_txtBatteryStartY );
 
-        println( batText );
+        println( s_batText );
 
-    }
-}
-
-
-
-/******************************************************************************/
-/*!
-    @brief  Get width of the bounding box of a text with the current typographic settings
-*/
-/******************************************************************************/
-
-uint16_t Adafruit_FeatherOLED_Photography::getTextBoxWidth( String str )
-{
-
-    int16_t  txtBoxX  = 0;
-    int16_t  txtBoxY  = 0;
-    uint16_t txtBoxW  = 0;
-    uint16_t txtBoxH  = 0;
-
-    int strLen        = str.length() + 1;
-
-    char charArray[ strLen ];
-
-
-
-    //
-    // Copy str over to charArray
-    //
-
-    str.toCharArray( charArray, strLen );
-
-
-
-    //
-    // Evaluate width differently according to
-    // the text nature ( fixed width or font )
-    //
-
-    if ( ! gfxFont )
-    {
-
-        return ( strLen - 1 ) * textsize * 6;
+        setTextSize( ui_originalTxtSize );
 
     }
-    else
-    {
-
-        getTextBounds( charArray, 0, 0, &txtBoxX, &txtBoxY, &txtBoxW, &txtBoxH );
-
-        return txtBoxW;
-
-    }
-
 }
 
 
@@ -433,6 +491,58 @@ uint16_t Adafruit_FeatherOLED_Photography::getTextBoxWidth( String str )
  *                                                               PUBLIC methods
  *
  ******************************************************************************/
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Get display width
+*/
+/******************************************************************************/
+
+uint16_t Adafruit_FeatherOLED_Photography::getDisplayWidth ( void )
+{
+    return _width;      // _width variable is declared in the Adafruit_GFX.h as a property of the Adafruit_GFX object
+}
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Get display width
+*/
+/******************************************************************************/
+
+uint16_t Adafruit_FeatherOLED_Photography::getDisplayHeight ( void )
+{
+    return _height;     // _height variable is declared in the Adafruit_GFX.h as a property of the Adafruit_GFX object
+}
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Get text size
+*/
+/******************************************************************************/
+
+uint8_t Adafruit_FeatherOLED_Photography::getTextSize ( void )
+{
+    return textsize;    // textsize variable is declared in the Adafruit_GFX.h as a property of the Adafruit_GFX object
+}
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Get icons text size
+*/
+/******************************************************************************/
+
+uint8_t Adafruit_FeatherOLED_Photography::getIconsSize ( void )
+{
+    return _iconsSize;
+}
 
 
 
@@ -457,9 +567,7 @@ bool Adafruit_FeatherOLED_Photography::getBatteryVisible ( void )
 
 bool Adafruit_FeatherOLED_Photography::isBatteryVisible ( void )
 {
-
     return getBatteryVisible();
-
 }
 
 
@@ -470,11 +578,9 @@ bool Adafruit_FeatherOLED_Photography::isBatteryVisible ( void )
 */
 /******************************************************************************/
 
-uint8_t Adafruit_FeatherOLED_Photography::getBatteryIcon ( void )
+uint8_t Adafruit_FeatherOLED_Photography::getBatteryIconStyle ( void )
 {
-
     return _batteryIcon;
-
 }
 
 
@@ -485,11 +591,22 @@ uint8_t Adafruit_FeatherOLED_Photography::getBatteryIcon ( void )
 */
 /******************************************************************************/
 
-uint8_t Adafruit_FeatherOLED_Photography::getBatteryText ( void )
+uint8_t Adafruit_FeatherOLED_Photography::getBatteryTextStyle ( void )
 {
-
     return _batteryText;
+}
 
+
+
+/******************************************************************************/
+/*!
+    @brief  Set battery icon and descriptive text visibility
+*/
+/******************************************************************************/
+
+void Adafruit_FeatherOLED_Photography::setIconsSize( uint8_t size )
+{
+    _iconsSize = ( size > 0 ) ? size : 1;
 }
 
 
@@ -512,7 +629,7 @@ void Adafruit_FeatherOLED_Photography::setBatteryVisible ( bool enable = true )
              _batteryText == FOLED_BATTERYTEXT_NONE )
         {
 
-            setBatteryIcon( FOLED_BATTERYICON_BARS );
+            setBatteryIconStyle( FOLED_BATTERYICON_BARS );
 
         }
 
@@ -525,8 +642,8 @@ void Adafruit_FeatherOLED_Photography::setBatteryVisible ( bool enable = true )
             _batteryText == FOLED_BATTERYTEXT_PERC )
         {
 
-            setBatteryIcon( FOLED_BATTERYICON_NONE );
-            setBatteryText( FOLED_BATTERYTEXT_NONE );
+            setBatteryIconStyle( FOLED_BATTERYICON_NONE );
+            setBatteryTextStyle( FOLED_BATTERYTEXT_NONE );
 
         }
 
@@ -542,11 +659,9 @@ void Adafruit_FeatherOLED_Photography::setBatteryVisible ( bool enable = true )
 */
 /******************************************************************************/
 
-void Adafruit_FeatherOLED_Photography::setBatteryIcon ( uint8_t enable = FOLED_BATTERYICON_BARS )
+void Adafruit_FeatherOLED_Photography::setBatteryIconStyle ( uint8_t enable = FOLED_BATTERYICON_BARS )
 {
-
     _batteryIcon    = enable;
-
 }
 
 
@@ -557,11 +672,9 @@ void Adafruit_FeatherOLED_Photography::setBatteryIcon ( uint8_t enable = FOLED_B
 */
 /******************************************************************************/
 
-void Adafruit_FeatherOLED_Photography::setBatteryText ( uint8_t textType = FOLED_BATTERYTEXT_PERC )
+void Adafruit_FeatherOLED_Photography::setBatteryTextStyle ( uint8_t textType = FOLED_BATTERYTEXT_PERC )
 {
-
     _batteryText    = textType;
-
 }
 
 
@@ -575,11 +688,28 @@ void Adafruit_FeatherOLED_Photography::setBatteryText ( uint8_t textType = FOLED
 void Adafruit_FeatherOLED_Photography::refreshIcons ( void )
 {
 
+    uint8_t ui_icnSize         = getIconsSize();
+    uint8_t ui_originalTxtSize = getTextSize();
+
+
+
+    //
+    // Set text size according to cions size
+    //
+
+    setTextSize( getIconsSize() );
+
+
+
     //
     // Erase the canvas
     //
 
-    fillRect( _displayWidth - _icnBatteryWidth - 31,  0, _displayWidth, _icnBatteryHeight + 1, BLACK );
+    fillRect( _width - ( _icnBatteryWidth * ui_icnSize ) - getTextBoxWidth( getBatteryText() ) - 6,
+              0,
+              _width,
+              ( _icnBatteryHeight * ui_icnSize ) + 1,
+              BLACK );
 
 
 
@@ -592,10 +722,37 @@ void Adafruit_FeatherOLED_Photography::refreshIcons ( void )
 
 
     //
+    // Restore text size
+    //
+
+    setTextSize( ui_originalTxtSize );
+
+
+    //
     // Display on screen
     //
 
     display();
+
+}
+
+
+
+/******************************************************************************/
+/*!
+    @brief  Clears the message area (the area below the top icons strip) and
+            sets the cursor to 0, 8 * getIconsSize()
+*/
+/******************************************************************************/
+
+void Adafruit_FeatherOLED_Photography::clearMsgArea ( void )
+{
+
+  fillRect( 0, 8 * getIconsSize(), 128, _height - getIconsSize(), BLACK);
+
+  setCursor( 0, 8 * getIconsSize() );
+
+  display();
 
 }
 
