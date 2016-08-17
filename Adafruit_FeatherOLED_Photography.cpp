@@ -705,7 +705,7 @@ void Adafruit_FeatherOLED_Photography::refreshIcons ( void )
     // Erase the canvas
     //
 
-    fillRect( _width - ( _icnBatteryWidth * ui_icnSize ) - getTextBoxWidth( getBatteryText() ) - 6,
+    fillRect( _width - ( _icnBatteryWidth * ui_icnSize ) - max( getTextBoxWidth( getBatteryText() ) - 6 * ui_icnSize, 5 * 6 * ui_icnSize ),
               0,
               _width,
               ( _icnBatteryHeight * ui_icnSize ) + 1,
