@@ -26,3 +26,6 @@
 *.exe
 *.out
 *.app
+
+#Apple Resource Forks
+.DS_Store
