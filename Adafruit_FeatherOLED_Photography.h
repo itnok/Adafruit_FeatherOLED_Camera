@@ -210,7 +210,11 @@ class Adafruit_FeatherOLED_Photography : public Adafruit_FeatherOLED
         //
 
         void     refreshIcons       ( void );
+        void     wipeMsgArea        ( void );
         void     clearMsgArea       ( void );
+
+        void     printMsgArea       ( String str, uint8_t align );
+        void     printShutterSpeed  ( String str );
 
 };
 

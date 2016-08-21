@@ -740,6 +740,22 @@ void Adafruit_FeatherOLED_Photography::refreshIcons ( void )
 
 /******************************************************************************/
 /*!
+    @brief  Wipe out all the pixels in the message area but does NOT
+            refresh the screen ( need to call display() to show change )
+*/
+/******************************************************************************/
+
+void Adafruit_FeatherOLED_Photography::wipeMsgArea ( void )
+{
+
+    fillRect( 0, 8 * getIconsSize(), 128, _height - getIconsSize(), BLACK);
+
+}
+
+
+
+/******************************************************************************/
+/*!
     @brief  Clears the message area (the area below the top icons strip) and
             sets the cursor to 0, 8 * getIconsSize()
 */
@@ -748,7 +764,13 @@ void Adafruit_FeatherOLED_Photography::refreshIcons ( void )
 void Adafruit_FeatherOLED_Photography::clearMsgArea ( void )
 {
 
-  fillRect( 0, 8 * getIconsSize(), 128, _height - getIconsSize(), BLACK);
+    wipeMsgArea();
+
+    setCursor( 0, 8 * getIconsSize() );
+
+    display();
+
+}
 
   setCursor( 0, 8 * getIconsSize() );
 
